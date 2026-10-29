@@ -1,0 +1,540 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marginalia — visual journal preview</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #fbfaf7;
+  --ink: #344660;
+  --accent: #b9d4df;
+  --ui: #f5f3ef;
+  --line: #e8e3dc;
+  --muted: #8c8d88;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ui);
+  color: #343a40;
+  font: 14px 'DM Sans', sans-serif;
+}
+.top {
+  height: 62px;
+  background: #fffdf9;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.brand { font: 24px 'Playfair Display', serif; }
+.brand span { color: #9d5964; }
+.sub {
+  font: 10px 'DM Mono', monospace;
+  letter-spacing: 1.4px;
+  color: #98978f;
+}
+.btn, select, input { font: 12px 'DM Sans', sans-serif; }
+.btn {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: #fffdf9;
+  cursor: pointer;
+  color: #394a60;
+}
+.btn.primary { background: #344660; color: white; }
+.app {
+  display: grid;
+  grid-template-columns: 220px minmax(0,1fr) 270px;
+  min-height: calc(100vh - 62px);
+}
+aside {
+  background: #fffdf9;
+  padding: 20px 15px;
+  border-right: 1px solid var(--line);
+}
+.right { border-right: 0; border-left: 1px solid var(--line); }
+.label {
+  font: 9px 'DM Mono', monospace;
+  letter-spacing: 1.4px;
+  color: #99968e;
+  margin: 5px 0 12px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+  color: #727774;
+  font-size: 11px;
+}
+.field input, .field select {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fffefa;
+  padding: 9px;
+  color: #39424b;
+  width: 100%;
+}
+.field input[type=color] { padding: 2px; height: 35px; }
+.field input[type=range] { padding: 0; accent-color: #344660; }
+.main { min-width: 0; display: flex; flex-direction: column; }
+.toolbar {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--line);
+  background: #f9f7f3;
+}
+.workarea {
+  padding: 28px;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background-color: #eeece7;
+  background-image: radial-gradient(#d7d3cc .7px,transparent .7px);
+  background-size: 13px 13px;
+}
+.page {
+  width: min(100%,650px);
+  min-width: 320px;
+  aspect-ratio: .707;
+  background: var(--paper);
+  color: var(--ink);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 36px #29251b1b;
+  border: 1px solid #e6e1d9;
+}
+.topline {
+  position: absolute;
+  top: 3%;
+  left: 5%;
+  right: 5%;
+  display: flex;
+  justify-content: space-between;
+  font: 9px 'DM Mono', monospace;
+  letter-spacing: 1px;
+  opacity: .65;
+  pointer-events: none;
+}
+.element {
+  position: absolute;
+  touch-action: none;
+  cursor: move;
+  min-width: 35px;
+  min-height: 24px;
+  padding: 2px;
+}
+.element.selected { outline: 1px dashed #7893a8; outline-offset: 2px; }
+.words {
+  height: 100%;
+  width: 100%;
+  outline: none;
+  overflow-wrap: anywhere;
+  cursor: text;
+  line-height: 1.7;
+  font: 16px Georgia, serif;
+}
+.words h1, .words h2 {
+  font: normal 30px/1.15 'Playfair Display', serif;
+  margin: 0 0 14px;
+}
+.words p { margin: 0 0 12px; }
+.picture {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.record {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle,#16191c 0 2px,#292d31 3px 4px,#121518 5px 6px);
+  border: 4px solid #1a1d20;
+  display: grid;
+  place-items: center;
+}
+.record:after {
+  content: '';
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #b9c9d5;
+  border: 2px solid #e4d8c1;
+}
+.record.playing { animation: spin 3s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.help { font-size: 10px; line-height: 1.5; color: #96958d; margin-top: 18px; }
+.theme-list { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.theme {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 7px;
+  text-align: left;
+  background: white;
+  cursor: pointer;
+  font-size: 10px;
+  color: #555;
+}
+.swatch { height: 27px; border-radius: 4px; margin-bottom: 5px; }
+.smallrow { display: flex; gap: 6px; flex-wrap: wrap; }
+.smallrow .btn { padding: 7px 9px; }
+.status { font-size: 10px; color: #8c8d88; }
+.divider { border: 0; border-top: 1px solid #eee9e1; margin: 17px 0; }
+.musicframe {
+  width: 100%;
+  height: 152px;
+  border: 0;
+  border-radius: 9px;
+  margin-top: 10px;
+}
+.hidden { display: none !important; }
+@media(max-width:1000px) {
+  .app { grid-template-columns: 180px minmax(0,1fr); }
+  .right {
+    grid-column: 1/-1;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 16px;
+  }
+  .right .label { grid-column: 1/-1; }
+}
+@media(max-width:650px) {
+  .app { grid-template-columns: 1fr; }
+  .left { display: none; }
+  .right { display: block; }
+  .workarea { padding: 12px; }
+  .top { padding: 0 12px; }
+  .brand { font-size: 20px; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <div class="brand">marginalia<span>.</span></div>
+    <div class="sub">A PRIVATE LITERARY ARCHIVE</div>
+  </div>
+  <div class="smallrow">
+    <button class="btn" id="newEntry">＋ New entry</button>
+    <button class="btn primary" id="save">Save preview</button>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="left">
+    <div class="label">YOUR ARCHIVE</div>
+    <button class="btn" style="width:100%;text-align:left" id="entryOne">✦ Notes to the unsent</button>
+    <button class="btn" style="width:100%;text-align:left;margin-top:7px" id="entryTwo">✦ A quiet kind of blue</button>
+    <hr class="divider">
+    <div class="label">THEMES</div>
+    <div class="theme-list">
+      <button class="theme" data-theme="blue"><div class="swatch" style="background:#fbfaf7;border:1px solid #ddd">Aa</div>Blue nostalgia</button>
+      <button class="theme" data-theme="ivory"><div class="swatch" style="background:#f4efe4">Aa</div>Ivory poetry</button>
+      <button class="theme" data-theme="crimson"><div class="swatch" style="background:#211b1c;color:#f2e6df">Aa</div>Crimson letters</button>
+      <button class="theme" data-theme="midnight"><div class="swatch" style="background:#101923;color:#dce5f2">Aa</div>Midnight</button>
+      <button class="theme" data-theme="school"><div class="swatch" style="background:repeating-linear-gradient(#fffefa 0 20px,#d5e1ed 21px 22px)">Aa</div>School notebook</button>
+    </div>
+    <p class="help">This is a design playground. Changes are stored in this browser when you press Save preview.</p>
+  </aside>
+
+  <main class="main">
+    <div class="toolbar">
+      <button class="btn" id="addText">＋ Text</button>
+      <button class="btn" id="addImage">＋ Image</button>
+      <button class="btn" id="addRecord">＋ Vinyl</button>
+      <button class="btn" id="addMusic">♫ Music link</button>
+      <span class="status" id="status">Select an object to edit it</span>
+      <input class="hidden" type="file" id="file" accept="image/*">
+    </div>
+    <div class="workarea">
+      <div class="page" id="page">
+        <div class="topline"><span>PRIVATE PAPERS · NO. 001</span><span>VOL. I</span></div>
+        <div class="element" data-id="title" style="left:9%;top:15%;width:79%;height:20%;opacity:1">
+          <div class="words" contenteditable="true">
+            <h1>Notes to the unsent</h1>
+            <p>Some words are easier to keep on a page.</p>
+          </div>
+        </div>
+        <div class="element" data-id="body" style="left:12%;top:40%;width:65%;height:23%;opacity:1">
+          <div class="words" contenteditable="true">Kadangkala, aku masih menyimpan <em>kenangan</em> yang tidak pernah sempat aku ceritakan.
+            <p>Dan mungkin, <strong>sesetengah perkara</strong> akan kekal di sini, tanpa perlu diketahui sesiapa.</p>
+          </div>
+        </div>
+        <div class="element" data-id="flower" style="left:61%;top:65%;width:29%;height:22%;opacity:.78">
+          <img class="picture" alt="decorative flower" src="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=500&q=80" style="mix-blend-mode:multiply">
+        </div>
+        <div class="element" data-id="record" style="left:8%;top:73%;width:90px;height:90px;opacity:1">
+          <div class="record"></div>
+        </div>
+        <div class="topline" style="top:auto;bottom:3%;justify-content:center;font:italic 11px 'Playfair Display',serif;letter-spacing:0">a page for what remains</div>
+      </div>
+    </div>
+  </main>
+
+  <aside class="right">
+    <div>
+      <div class="label">ENTRY SETTINGS</div>
+      <label class="field">Entry title<input id="entryTitle" value="Notes to the unsent"></label>
+      <label class="field">Page background<input type="color" id="bg" value="#fbfaf7"></label>
+      <label class="field">Ink colour<input type="color" id="ink" value="#344660"></label>
+      <label class="field">Accent colour<input type="color" id="accent" value="#b9d4df"></label>
+    </div>
+    <div>
+      <div class="label">SELECTED OBJECT</div>
+      <div class="status" id="selectedName">Nothing selected</div>
+      <label class="field">Opacity<input type="range" id="opacity" min="0.05" max="1" step="0.05" value="1"><span id="opacityVal">100%</span></label>
+      <div class="smallrow">
+        <button class="btn" id="front">Bring forward</button>
+        <button class="btn" id="back">Send backward</button>
+      </div>
+      <label class="field">Text colour<input type="color" id="textColor" value="#344660"></label>
+      <div class="smallrow">
+        <button class="btn" id="bold"><b>B</b></button>
+        <button class="btn" id="italic"><i>I</i></button>
+        <button class="btn" id="underline"><u>U</u></button>
+      </div>
+      <p class="help">Drag items on the page to reposition. Click text to edit directly. Select an image to adjust opacity.</p>
+    </div>
+    <div>
+      <div class="label">SOUNDTRACK</div>
+      <label class="field">Spotify or YouTube URL<input id="musicUrl" placeholder="Paste a song or video link"></label>
+      <button class="btn primary" id="embed">Load player</button>
+      <div id="musicSlot"></div>
+      <p class="help">Music playback is provided by the embedded service and may require its own controls or account.</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+const page = document.getElementById('page');
+let selected = null, drag = null, uid = 0;
+const savedKey = 'marginalia-preview-v1';
+
+function select(el) {
+  document.querySelectorAll('.element').forEach(x => x.classList.remove('selected'));
+  selected = el;
+  if (el) {
+    el.classList.add('selected');
+    document.getElementById('selectedName').textContent =
+      el.dataset.id || el.querySelector('.words')?.innerText.slice(0,24) || 'Object';
+    document.getElementById('opacity').value = parseFloat(el.style.opacity || 1);
+    document.getElementById('opacityVal').textContent =
+      Math.round(parseFloat(el.style.opacity || 1) * 100) + '%';
+    const c = el.querySelector('.words')?.style.color;
+    document.getElementById('textColor').value = c || getComputedStyle(page).color;
+  } else {
+    document.getElementById('selectedName').textContent = 'Nothing selected';
+  }
+}
+
+function wire(el) {
+  el.addEventListener('pointerdown', e => {
+    if (e.target.closest('[contenteditable=true]')) {
+      select(el);
+      return;
+    }
+    select(el);
+    drag = {
+      el, x:e.clientX, y:e.clientY,
+      left:parseFloat(el.style.left)||0,
+      top:parseFloat(el.style.top)||0
+    };
+    el.setPointerCapture?.(e.pointerId);
+  });
+}
+
+document.querySelectorAll('.element').forEach(wire);
+
+document.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const r = page.getBoundingClientRect();
+  drag.el.style.left = (drag.left + (e.clientX-drag.x)/r.width*100) + '%';
+  drag.el.style.top = (drag.top + (e.clientY-drag.y)/r.height*100) + '%';
+});
+document.addEventListener('pointerup', () => drag = null);
+
+page.addEventListener('click', e => {
+  const el = e.target.closest('.element');
+  if (el) select(el);
+});
+
+function add(type) {
+  const el = document.createElement('div');
+  el.className = 'element';
+  el.dataset.id = type + '-' + (++uid);
+  el.style.cssText =
+    `left:30%;top:30%;width:${type==='image'?'25%':'42%'};height:${type==='image'?'24%':'15%'};opacity:1;z-index:${10+uid}`;
+
+  if (type === 'text') {
+    el.innerHTML = '<div class="words" contenteditable="true">Write your words here…</div>';
+  }
+  if (type === 'record') {
+    el.innerHTML = '<div class="record"></div>';
+    el.querySelector('.record').addEventListener('click', () =>
+      el.querySelector('.record').classList.toggle('playing'));
+  }
+  if (type === 'image') {
+    const fileInput = document.getElementById('file');
+    fileInput.click();
+    fileInput.onchange = e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      el.innerHTML = '';
+      const im = document.createElement('img');
+      im.className = 'picture';
+      im.src = URL.createObjectURL(f);
+      el.append(im);
+      page.append(el);
+      wire(el);
+      select(el);
+    };
+    return;
+  }
+  page.append(el);
+  wire(el);
+  select(el);
+}
+
+document.getElementById('addText').onclick = () => add('text');
+document.getElementById('addImage').onclick = () => add('image');
+document.getElementById('addRecord').onclick = () => add('record');
+
+document.getElementById('opacity').oninput = e => {
+  if (selected) selected.style.opacity = e.target.value;
+  document.getElementById('opacityVal').textContent =
+    Math.round(e.target.value*100) + '%';
+};
+
+document.getElementById('front').onclick = () => {
+  if (selected) selected.style.zIndex = String((parseInt(selected.style.zIndex)||1)+1);
+};
+document.getElementById('back').onclick = () => {
+  if (selected) selected.style.zIndex = String((parseInt(selected.style.zIndex)||1)-1);
+};
+
+document.getElementById('bg').oninput = e => page.style.background = e.target.value;
+document.getElementById('ink').oninput = e => page.style.color = e.target.value;
+document.getElementById('accent').oninput = e => page.style.setProperty('--accent', e.target.value);
+document.getElementById('textColor').oninput = e => {
+  if (selected?.querySelector('.words'))
+    selected.querySelector('.words').style.color = e.target.value;
+};
+
+for (const [id,cmd] of [['bold','bold'],['italic','italic'],['underline','underline']]) {
+  document.getElementById(id).onclick = () => document.execCommand(cmd);
+}
+
+document.getElementById('entryTitle').oninput = e => {
+  const h = page.querySelector('h1');
+  if (h) h.textContent = e.target.value;
+};
+
+document.querySelectorAll('[data-theme]').forEach(b => b.onclick = () => {
+  const vals = {
+    blue:['#fbfaf7','#344660','#b9d4df'],
+    ivory:['#f4efe4','#443b32','#d8cbb4'],
+    crimson:['#211b1c','#f2e6df','#a94751'],
+    midnight:['#101923','#dce5f2','#526e91'],
+    school:['#fffefa','#263d61','#c5d8e9']
+  }[b.dataset.theme];
+  page.style.background = vals[0];
+  page.style.color = vals[1];
+  page.style.setProperty('--accent',vals[2]);
+  document.getElementById('bg').value = vals[0];
+  document.getElementById('ink').value = vals[1];
+  document.getElementById('accent').value = vals[2];
+  document.getElementById('status').textContent = 'Theme: ' + b.dataset.theme;
+});
+
+function getEmbed(url) {
+  let m = url.match(/open\.spotify\.com\/(track|album|playlist|episode|show)\/([A-Za-z0-9]+)/);
+  if (m) return 'https://open.spotify.com/embed/' + m[1] + '/' + m[2];
+  m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{6,})/);
+  if (m) return 'https://www.youtube-nocookie.com/embed/' + m[1];
+  return '';
+}
+
+document.getElementById('embed').onclick = () => {
+  const src = getEmbed(document.getElementById('musicUrl').value.trim());
+  const slot = document.getElementById('musicSlot');
+  slot.innerHTML = '';
+  if (!src) {
+    slot.textContent = 'Paste a valid Spotify or YouTube link.';
+    return;
+  }
+  const f = document.createElement('iframe');
+  f.className = 'musicframe';
+  f.src = src;
+  f.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
+  f.title = 'Embedded music';
+  slot.append(f);
+};
+
+document.getElementById('addMusic').onclick = () => {
+  document.getElementById('musicUrl').focus();
+  document.getElementById('status').textContent =
+    'Paste a Spotify or YouTube URL in Soundtrack';
+};
+
+document.getElementById('save').onclick = () => {
+  const data = {
+    html:page.innerHTML,
+    background:page.style.background,
+    color:page.style.color,
+    title:document.getElementById('entryTitle').value,
+    musicUrl:document.getElementById('musicUrl').value
+  };
+  localStorage.setItem(savedKey,JSON.stringify(data));
+  document.getElementById('status').textContent = 'Saved in this browser';
+};
+
+document.getElementById('newEntry').onclick = () => {
+  page.querySelectorAll('.element').forEach(e => e.remove());
+  document.getElementById('entryTitle').value = 'Untitled entry';
+  add('text');
+  document.getElementById('status').textContent = 'New entry — start writing';
+};
+
+document.getElementById('entryOne').onclick = () => location.reload();
+
+document.getElementById('entryTwo').onclick = () => {
+  document.getElementById('entryTitle').value = 'A quiet kind of blue';
+  const h = page.querySelector('h1');
+  if (h) h.textContent = 'A quiet kind of blue';
+  const p = page.querySelectorAll('.words')[1];
+  if (p) p.innerHTML =
+    'There are feelings that arrive softly, like rain against a window.<p>Somehow, even silence can become a place to return to.</p>';
+  document.getElementById('status').textContent = 'Loaded sample entry';
+};
+
+try {
+  const d = JSON.parse(localStorage.getItem(savedKey) || 'null');
+  if (d) {
+    page.innerHTML = d.html;
+    page.style.background = d.background;
+    page.style.color = d.color;
+    document.getElementById('entryTitle').value = d.title;
+    document.getElementById('musicUrl').value = d.musicUrl || '';
+    page.querySelectorAll('.element').forEach(wire);
+    document.getElementById('status').textContent = 'Restored local preview';
+  }
+} catch(e) {}
+</script>
+</body>
+</html>
